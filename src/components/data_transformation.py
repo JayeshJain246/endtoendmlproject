@@ -1,18 +1,18 @@
 import sys
 from dataclasses import dataclass
-from typing import dataclass_transform
+
 import numpy as np
 import pandas as pd
-from sklearn import preprocessing
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from tempfile import _infer_return_type
 
 from src.exception import CustomException
 from src.logger import logging
 import os
+
+from src.utils import save_object
 
 @dataclass
 class DataTransformationConfig:
@@ -47,7 +47,7 @@ class DataTransformation:
                 steps=[
                     ("imputer",SimpleImputer(strategy="most_frequent")),
                     ("one_hot_encoder", OneHotEncoder()),
-                    ("scaler",StandardScaler())
+                    ("scaler",StandardScaler(with_mean=False))
                 ]
             )
 
@@ -68,8 +68,8 @@ class DataTransformation:
             
     def initiate_data_transformation(self, train_path, test_path):
         try:
-            train_df = pd.read_csv("train_path")
-            test_df = pd.read_csv("test_path")
+            train_df = pd.read_csv(train_path)
+            test_df = pd.read_csv(test_path)
 
             logging.info("Read train and test data completed")
 
@@ -91,7 +91,7 @@ class DataTransformation:
             )
 
             input_feature_train_arr = preprocessing_obj.fit_transform(input_feature_train_df)
-            input_feature_test_arr = preprocessing_obj.transform(input_feature_train_df)
+            input_feature_test_arr = preprocessing_obj.transform(input_feature_test_df)
 
             train_arr = np.c_[input_feature_train_arr, np.array(target_feature_train_df)]
             test_arr = np.c_[input_feature_test_arr, np.array(target_feature_test_df)]
@@ -99,7 +99,7 @@ class DataTransformation:
             logging.info(f"Saved preprocessing object")
 
             save_object(
-                file_path:self.datac_transformation_config.preprocessing_obj_file_path,
+                file_path=self.data_transformation_config.preprocessing_obj_file_path,
                 obj=preprocessing_obj
             )
 
@@ -111,5 +111,6 @@ class DataTransformation:
 
 
 
-        except:
-            pass
+        except Exception as e:
+            raise CustomException(e,sys)
+            
